@@ -16,15 +16,16 @@ local Players = game:GetService("Players")
 local HttpService = game:GetService("HttpService")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
-local CoreGui = game:GetService("CoreGui")
+local CoreGui = (gethui and gethui()) or game:GetService("CoreGui")
 
 local LocalPlayer = Players.LocalPlayer
 local UserId = tostring(LocalPlayer.UserId)
 
 -- Защита от двойного запуска
-if CoreGui:FindFirstChild("BurmaldaHook") then
-    CoreGui:FindFirstChild("BurmaldaHook"):Destroy()
-end
+pcall(function()
+    local old = CoreGui:FindFirstChild("BurmaldaHook")
+    if old then old:Destroy() end
+end)
 
 -- ============================================
 -- УТИЛИТЫ
@@ -37,16 +38,20 @@ local function create(class, props)
     return obj
 end
 
-local function corner(radius)
-    return create("UICorner", { CornerRadius = UDim.new(0, radius) })
+local function corner(radius, parent)
+    local c = Instance.new("UICorner")
+    c.CornerRadius = UDim.new(0, radius)
+    if parent then c.Parent = parent end
+    return c
 end
 
-local function stroke(color, thickness)
-    return create("UIStroke", {
-        Color = color or Color3.fromRGB(255, 255, 255),
-        Thickness = thickness or 1,
-        Transparency = 0.7,
-    })
+local function stroke(color, thickness, parent)
+    local s = Instance.new("UIStroke")
+    s.Color = color or Color3.fromRGB(255, 255, 255)
+    s.Thickness = thickness or 1
+    s.Transparency = 0.7
+    if parent then s.Parent = parent end
+    return s
 end
 
 -- ============================================
@@ -60,16 +65,14 @@ local ScreenGui = create("ScreenGui", {
     DisplayOrder = 999,
 })
 
--- Затемнение фона
 local Backdrop = create("Frame", {
     Name = "Backdrop",
     Parent = ScreenGui,
     Size = UDim2.new(1, 0, 1, 0),
     BackgroundColor3 = Color3.fromRGB(0, 0, 0),
-    BackgroundTransparency = 1,
+    BackgroundTransparency = 0.5,
     BorderSizePixel = 0,
 })
-TweenService:Create(Backdrop, TweenInfo.new(0.4), { BackgroundTransparency = 0.5 }):Play()
 
 -- ============================================
 -- ГЛАВНОЕ ОКНО
@@ -86,17 +89,9 @@ local Main = create("Frame", {
     ClipsDescendants = true,
 })
 
-corner(18)(Main)
-
-local MainStroke = stroke(Color3.fromRGB(255, 255, 255), 1)
+corner(18, Main)
+local MainStroke = stroke(Color3.fromRGB(255, 255, 255), 1, Main)
 MainStroke.Transparency = 0.5
-MainStroke.Parent = Main
-
--- Анимация появления
-Main.Position = UDim2.new(0.5, 0, 0.55, 0)
-TweenService:Create(Main, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-    Position = UDim2.new(0.5, 0, 0.5, 0)
-}):Play()
 
 -- ============================================
 -- ЗАГОЛОВОК
@@ -136,23 +131,19 @@ local CloseBtn = create("TextButton", {
     Position = UDim2.new(1, -46, 0.5, -18),
     BackgroundColor3 = Color3.fromRGB(255, 255, 255),
     BackgroundTransparency = 0.7,
-    Text = "✕",
+    Text = "X",
     Font = Enum.Font.GothamBold,
     TextSize = 16,
     TextColor3 = Color3.fromRGB(30, 30, 40),
     AutoButtonColor = false,
 })
-corner(10)(CloseBtn)
-stroke(Color3.fromRGB(200, 200, 210), 1).Parent = CloseBtn
+corner(10, CloseBtn)
+stroke(Color3.fromRGB(200, 200, 210), 1, CloseBtn)
 
 CloseBtn.MouseButton1Click:Connect(function()
-    TweenService:Create(Main, TweenInfo.new(0.25), {
-        Size = UDim2.new(0, 420, 0, 0),
-        BackgroundTransparency = 1,
-    }):Play()
-    TweenService:Create(Backdrop, TweenInfo.new(0.25), { BackgroundTransparency = 1 }):Play()
-    task.wait(0.26)
-    ScreenGui:Destroy()
+    pcall(function()
+        ScreenGui:Destroy()
+    end)
 end)
 
 -- Перетаскивание
@@ -205,10 +196,9 @@ local KeyBox = create("Frame", {
     BackgroundTransparency = 0.35,
     BorderSizePixel = 0,
 })
-corner(12)(KeyBox)
-local keyStroke = stroke(Color3.fromRGB(180, 180, 200), 1)
+corner(12, KeyBox)
+local keyStroke = stroke(Color3.fromRGB(180, 180, 200), 1, KeyBox)
 keyStroke.Transparency = 0.4
-keyStroke.Parent = KeyBox
 
 local KeyInput = create("TextBox", {
     Parent = KeyBox,
@@ -249,13 +239,17 @@ local LoginBtn = create("TextButton", {
     AutoButtonColor = false,
     BorderSizePixel = 0,
 })
-corner(12)(LoginBtn)
+corner(12, LoginBtn)
 
 LoginBtn.MouseEnter:Connect(function()
-    TweenService:Create(LoginBtn, TweenInfo.new(0.15), { BackgroundColor3 = Color3.fromRGB(50, 50, 65) }):Play()
+    pcall(function()
+        TweenService:Create(LoginBtn, TweenInfo.new(0.15), { BackgroundColor3 = Color3.fromRGB(50, 50, 65) }):Play()
+    end)
 end)
 LoginBtn.MouseLeave:Connect(function()
-    TweenService:Create(LoginBtn, TweenInfo.new(0.15), { BackgroundColor3 = Color3.fromRGB(30, 30, 40) }):Play()
+    pcall(function()
+        TweenService:Create(LoginBtn, TweenInfo.new(0.15), { BackgroundColor3 = Color3.fromRGB(30, 30, 40) }):Play()
+    end)
 end)
 
 -- ============================================
@@ -289,15 +283,15 @@ local GetKeyBtn = create("TextButton", {
     Position = UDim2.new(0, 0, 0, 0),
     BackgroundColor3 = Color3.fromRGB(255, 255, 255),
     BackgroundTransparency = 0.55,
-    Text = "🔑 Get Key",
+    Text = "Get Key",
     Font = Enum.Font.GothamBold,
     TextSize = 13,
     TextColor3 = Color3.fromRGB(30, 30, 40),
     AutoButtonColor = false,
     BorderSizePixel = 0,
 })
-corner(10)(GetKeyBtn)
-stroke(Color3.fromRGB(180, 180, 200), 1).Parent = GetKeyBtn
+corner(10, GetKeyBtn)
+stroke(Color3.fromRGB(180, 180, 200), 1, GetKeyBtn)
 
 local DiscordBtn = create("TextButton", {
     Parent = BtnRow,
@@ -305,14 +299,14 @@ local DiscordBtn = create("TextButton", {
     Position = UDim2.new(0.5, 6, 0, 0),
     BackgroundColor3 = Color3.fromRGB(88, 101, 242),
     BackgroundTransparency = 0.1,
-    Text = "💬 Discord",
+    Text = "Discord",
     Font = Enum.Font.GothamBold,
     TextSize = 13,
     TextColor3 = Color3.fromRGB(255, 255, 255),
     AutoButtonColor = false,
     BorderSizePixel = 0,
 })
-corner(10)(DiscordBtn)
+corner(10, DiscordBtn)
 
 GetKeyBtn.MouseButton1Click:Connect(function()
     pcall(function()
@@ -331,10 +325,14 @@ DiscordBtn.MouseButton1Click:Connect(function()
 end)
 
 GetKeyBtn.MouseEnter:Connect(function()
-    TweenService:Create(GetKeyBtn, TweenInfo.new(0.15), { BackgroundColor3 = Color3.fromRGB(245, 245, 250) }):Play()
+    pcall(function()
+        TweenService:Create(GetKeyBtn, TweenInfo.new(0.15), { BackgroundColor3 = Color3.fromRGB(245, 245, 250) }):Play()
+    end)
 end)
 GetKeyBtn.MouseLeave:Connect(function()
-    TweenService:Create(GetKeyBtn, TweenInfo.new(0.15), { BackgroundColor3 = Color3.fromRGB(255, 255, 255) }):Play()
+    pcall(function()
+        TweenService:Create(GetKeyBtn, TweenInfo.new(0.15), { BackgroundColor3 = Color3.fromRGB(255, 255, 255) }):Play()
+    end)
 end)
 
 -- ============================================
@@ -418,11 +416,8 @@ LoginBtn.MouseButton1Click:Connect(function()
         setLoading(false)
         setStatus("Успех! Запуск...", Color3.fromRGB(60, 180, 120))
         valid = true
-        TweenService:Create(Main, TweenInfo.new(0.3), {
-            BackgroundTransparency = 1,
-        }):Play()
         task.delay(0.6, function()
-            ScreenGui:Destroy()
+            pcall(function() ScreenGui:Destroy() end)
         end)
 
         local fn, err = loadstring(payload)
@@ -434,10 +429,11 @@ LoginBtn.MouseButton1Click:Connect(function()
     end)
 end)
 
--- Enter тоже запускает
 KeyInput.FocusLost:Connect(function(enter)
     if enter then
-        LoginBtn:GetPropertyChangedSignal("Text"):Connect(function() end)
-        LoginBtn.MouseButton1Click:Fire()
+        pcall(function()
+            LoginBtn:GetPropertyChangedSignal("Text"):Connect(function() end)
+            LoginBtn.MouseButton1Click:Fire()
+        end)
     end
 end)
